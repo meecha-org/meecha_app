@@ -1,0 +1,208 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:location/location.dart';
+
+// 位置情報用のインスタンス
+Location location = Location();
+
+// 位置情報のデータ
+bool _serviceEnabled = false;
+PermissionStatus? _permissionGranted = null;
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 位置情報のサービスを有効化する
+  _serviceEnabled = await location.serviceEnabled();
+  if (!_serviceEnabled) {
+    _serviceEnabled = await location.requestService();
+    if (!_serviceEnabled) {
+      return;
+    }
+  }
+
+  // 権限を取得する
+  _permissionGranted = await location.hasPermission();
+  if (_permissionGranted == PermissionStatus.denied) {
+    _permissionGranted = await location.requestPermission();
+    if (_permissionGranted != PermissionStatus.granted) {
+      return;
+    }
+  }
+
+  //バックグラウンドでの動作を有効化
+  location.enableBackgroundMode(enable: true);
+
+  location.onLocationChanged.listen((LocationData currentLocation) {
+    // Use current location
+    print(currentLocation);
+  });
+
+  runApp(const MyApp());
+}
+
+InAppWebViewController? main_control; //as InAppWebViewController;
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'meecha_v3',
+      theme: ThemeData(
+        // This is the theme of your application.
+        //
+        // TRY THIS: Try running your application with "flutter run". You'll see
+        // the application has a purple toolbar. Then, without quitting the app,
+        // try changing the seedColor in the colorScheme below to Colors.green
+        // and then invoke "hot reload" (save your changes or press the "hot
+        // reload" button in a Flutter-supported IDE, or press "r" if you used
+        // the command line to start the app).
+        //
+        // Notice that the counter didn't reset back to zero; the application
+        // state is not lost during the reload. To reset the state, use hot
+        // restart instead.
+        //
+        // This works for code too, not just values: Most code changes can be
+        // tested with just a hot reload.
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      ),
+      home: const MyHomePage(title: 'meecha_v3'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+
+  // This widget is the home page of your application. It is stateful, meaning
+  // that it has a State object (defined below) that contains fields that affect
+  // how it looks.
+
+  // This class is the configuration for the state. It holds the values (in this
+  // case the title) provided by the parent (in this case the App widget) and
+  // used by the build method of the State. Fields in a Widget subclass are
+  // always marked "final".
+
+  final String title;
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  bool showErrorPage = false;
+  bool hideError = false;
+  double load_val = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      body: WillPopScope(
+        child: SafeArea(
+          bottom: false,
+          left: false,
+          right: false,
+          child: Stack(
+            children: [
+              InAppWebView(
+                initialUrlRequest: URLRequest(
+                  url: WebUri("https://meecha.tail6cf7b.ts.net/statics/"),
+                ),
+                onLoadError:
+                    (controller, url, code, message) => {
+                      debugPrint("Load error : ${message.toString()}"),
+                      setState(() => showErrorPage = true),
+                    },
+                onLoadHttpError:
+                    (controller, url, statusCode, description) => {
+                      debugPrint(
+                        "Load Http error : $statusCode,URL : ${url.toString()}",
+                      ),
+                      setState(() => showErrorPage = false),
+                    },
+                onLoadStop: (controller, url) async {
+                  if (hideError) {
+                    try {
+                      setState(() => showErrorPage = false);
+                    } catch (ex) {
+                      debugPrint(ex.toString());
+                    }
+                    hideError = false;
+                  }
+                  main_control = controller;
+                },
+                onLoadStart: (controller, url) async {},
+                onProgressChanged: (controller, progress) {
+                  try {
+                    setState(() {
+                      load_val = progress / 100;
+                    });
+                  } catch (ex) {
+                    debugPrint(ex.toString());
+                  }
+                },
+                androidOnPermissionRequest: (
+                  InAppWebViewController controller,
+                  String origin,
+                  List<String> resources,
+                ) async {
+                  return PermissionRequestResponse(
+                    resources: resources,
+                    action: PermissionRequestResponseAction.GRANT,
+                  );
+                },
+              ),
+              showErrorPage
+                  ? Center(
+                    child: Container(
+                      color: Colors.white,
+                      alignment: Alignment.center,
+                      height: double.infinity,
+                      width: double.infinity,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('読み込みに失敗しました'),
+                            ElevatedButton(
+                              onPressed: () async {
+                                hideError = true;
+                                try {
+                                  await main_control?.goBack();
+                                } catch (ex) {
+                                  debugPrint(ex.toString());
+                                }
+                              },
+                              child: const Text('戻る'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                  : const SizedBox(height: 0, width: 0),
+              LinearProgressIndicator(
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  Colors.lightBlueAccent,
+                ),
+                value: load_val,
+              ),
+            ],
+          ),
+        ),
+        onWillPop: () async {
+          try {
+            await main_control?.goBack();
+          } catch (ex) {
+            debugPrint(ex.toString());
+          }
+          return false;
+        },
+      ),
+    );
+  }
+}
