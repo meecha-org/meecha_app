@@ -33,7 +33,7 @@ const notificationDetails = NotificationDetails(
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await LocationPermissionsHandler().request();
+  // await LocationPermissionsHandler().request();
   // await OptimizeBattery.stopOptimizingBatteryUsage();
 
   Meecha_App app = const Meecha_App();
@@ -75,6 +75,15 @@ Future<void> main() async {
             AndroidFlutterLocalNotificationsPlugin
           >()
           ?.requestNotificationsPermission();
+    }
+
+    if (Platform.isIOS) {
+      // IOS の場合、通知の許可を求める
+      await notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
     }
 
     await notificationsPlugin.initialize(
@@ -304,7 +313,8 @@ class Meecha_Page_State extends State<Meecha_Page> {
                   } catch (ex) {
                     debugPrint(ex.toString());
                   }
-                };
+                }
+                ;
 
                 call_js = true;
                 break;
@@ -409,7 +419,7 @@ class Meecha_Page_State extends State<Meecha_Page> {
             children: [
               InAppWebView(
                 initialUrlRequest: URLRequest(
-                  url: WebUri("https://meecha.tail6cf7b.ts.net/statics/"),
+                  url: WebUri("https://meecha.mattuu.com/statics/"),
                 ),
                 androidOnGeolocationPermissionsShowPrompt: (
                   InAppWebViewController controller,
