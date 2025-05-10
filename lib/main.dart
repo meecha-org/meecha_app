@@ -33,14 +33,19 @@ const notificationDetails = NotificationDetails(
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // await LocationPermissionsHandler().request();
-  // await OptimizeBattery.stopOptimizingBatteryUsage();
+
+  try {
+    await LocationPermissionsHandler().request();
+    // await OptimizeBattery.stopOptimizingBatteryUsage();
+  } catch (ex) {
+    debugPrint(ex.toString());
+  }
 
   Meecha_App app = const Meecha_App();
 
   await location.enableBackgroundMode(enable: true);
   await location.changeNotificationOptions(
-    iconName: "ic_launcher",
+    iconName: "@mipmap/ic_launcher",
     channelName: "Meecha_Core_Notify",
     title: "Meecha",
     subtitle: "Meecha は位置情報を使用しています",
@@ -66,7 +71,7 @@ Future<void> main() async {
 
   try {
     const initializationSettings = InitializationSettings(
-      android: AndroidInitializationSettings('ic_launcher'),
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
     );
 
     if (Platform.isAndroid) {
@@ -241,7 +246,7 @@ class Meecha_Page_State extends State<Meecha_Page> {
       try {
         location
             .changeNotificationOptions(
-              iconName: "ic_launcher",
+              iconName: "@mipmap/ic_launcher",
               channelName: "Meecha_Core_Notify",
               title: "Meecha",
               subtitle: "接続を開始しました",
@@ -269,7 +274,7 @@ class Meecha_Page_State extends State<Meecha_Page> {
               try {
                 location
                     .changeNotificationOptions(
-                      iconName: "ic_launcher",
+                      iconName: "@mipmap/ic_launcher",
                       channelName: "Meecha_Core_Notify",
                       title: "Meecha",
                       subtitle: "接続完了",
@@ -360,7 +365,7 @@ class Meecha_Page_State extends State<Meecha_Page> {
           try {
             location
                 .changeNotificationOptions(
-                  iconName: "ic_launcher",
+                  iconName: "@mipmap/ic_launcher",
                   channelName: "Meecha_Core_Notify",
                   title: "Meecha",
                   subtitle: "切断されました",
